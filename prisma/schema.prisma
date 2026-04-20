@@ -178,6 +178,8 @@ model Vehicle {
   imageUrls        String[]
 
   published Boolean @default(false)
+  /// Mostrar en portada (home) cuando también esté publicado
+  featured  Boolean @default(false)
 
   quotes          Quote[]
   favorites       Favorite[]
@@ -187,6 +189,7 @@ model Vehicle {
   updatedAt DateTime @updatedAt
 
   @@index([published, year])
+  @@index([published, featured])
   @@index([brandId, modelId])
 }
 

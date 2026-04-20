@@ -1,4 +1,4 @@
-﻿-- CreateSchema
+-- CreateSchema
 CREATE SCHEMA IF NOT EXISTS "public";
 
 -- CreateEnum
@@ -244,4 +244,3 @@ ALTER TABLE "AnalyticsEvent" ADD CONSTRAINT "AnalyticsEvent_vehicleId_fkey" FORE
 
 -- AddForeignKey
 ALTER TABLE "AnalyticsEvent" ADD CONSTRAINT "AnalyticsEvent_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
