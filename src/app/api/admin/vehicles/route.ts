@@ -79,6 +79,8 @@ export async function POST(req: Request) {
           imageUrls: d.imageUrls,
           published: d.published,
           featured: d.featured,
+          condition: d.condition,
+          salePriceAmount: d.salePriceAmount,
         },
         include: { brand: true, model: true },
       });

@@ -1,18 +1,20 @@
-import { mkdir, writeFile } from "fs/promises";
-import { join } from "path";
-import { randomUUID } from "crypto";
 
 import { NextResponse } from "next/server";
+
+import { v2 as cloudinary } from 'cloudinary';
 
 import { auth } from "@/auth";
 
 export const dynamic = "force-dynamic";
 
 const MAX_BYTES = 5 * 1024 * 1024;
-const ALLOWED = new Map<string, string>([
-  ["image/jpeg", "jpg"],
-  ["image/png", "png"],
-]);
+const ALLOWED_TYPES = new Set(["image/jpeg", "image/png"]);
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key:    process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -35,8 +37,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Máximo 20 archivos por solicitud." }, { status: 400 });
   }
 
-  const dir = join(process.cwd(), "public", "uploads", "vehicles");
-  await mkdir(dir, { recursive: true });
 
   const urls: string[] = [];
 
@@ -48,8 +48,9 @@ export async function POST(req: Request) {
         { status: 400 },
       );
     }
-    const ext = ALLOWED.get(file.type);
-    if (!ext) {
+
+    if (!ALLOWED_TYPES.has(file.type)) {
+
       return NextResponse.json(
         { error: `Tipo no permitido: ${file.type}. Solo JPG o PNG.` },
         { status: 400 },
@@ -57,10 +58,25 @@ export async function POST(req: Request) {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    const name = `${randomUUID()}.${ext}`;
-    const diskPath = join(dir, name);
-    await writeFile(diskPath, buffer);
-    urls.push(`/uploads/vehicles/${name}`);
+
+    // Subir a Cloudinary como stream desde buffer
+    const url = await new Promise<string>((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        {
+          folder: "autostore/vehicles",   // carpeta en tu cuenta Cloudinary
+          resource_type: "image",
+          // Cloudinary genera el public_id automáticamente (UUID interno)
+        },
+        (error, result) => {
+          if (error || !result) return reject(error ?? new Error("Upload fallido"));
+          resolve(result.secure_url);     // URL https permanente con CDN
+        },
+      );
+      stream.end(buffer);
+    });
+
+    urls.push(url);
+
   }
 
   if (urls.length === 0) {

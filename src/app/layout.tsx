@@ -17,8 +17,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "De La Espriella Motors",
-    template: "%s · De La Espriella Motors",
+    default: "Auto Store Motors",
+    template: "%s · Auto Store Motors",
   },
   description: "Concesionario de vehículos — catálogo, cotizaciones y administración.",
 };

@@ -1,4 +1,5 @@
-import type { FuelType, Transmission } from "@prisma/client";
+import type { FuelType, Transmission, VehicleCondition } from "@prisma/client";
+
 
 const fuel: Record<FuelType, string> = {
   GASOLINE: "Gasolina",
@@ -16,10 +17,21 @@ const transmission: Record<Transmission, string> = {
   CVT: "CVT",
 };
 
+const conditionMap: Record<VehicleCondition, string> = {
+  NEW: "Nuevo",
+  USED: "Usado",
+};
+
+
 export function fuelLabel(value: FuelType) {
   return fuel[value] ?? value;
 }
 
 export function transmissionLabel(value: Transmission) {
   return transmission[value] ?? value;
+}
+
+
+export function conditionLabel(value: VehicleCondition) {
+  return conditionMap[value] ?? value;
 }

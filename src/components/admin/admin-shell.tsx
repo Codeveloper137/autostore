@@ -4,7 +4,12 @@ import { AdminSignOut } from "@/components/admin/admin-sign-out";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-const nav = [{ href: "/admin/inventory", label: "Inventario" }];
+
+const nav = [
+  { href: "/admin/inventory", label: "Inventario" },
+  { href: "/admin/users", label: "Usuarios" },
+];
+
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
   return (
@@ -16,7 +21,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               Administración
             </span>
             <span className="font-heading text-sm font-semibold tracking-tight">
-              De La Espriella Motors
+              Auto Store Motors
             </span>
           </div>
         </div>

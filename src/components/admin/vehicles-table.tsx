@@ -30,21 +30,22 @@ export type { VehicleRow };
 type VehiclesTableProps = {
   vehicles: VehicleRow[];
   onEdit?: (vehicle: VehicleRow) => void;
+  onArchive?: (vehicle: VehicleRow) => void;
 };
 
-export function VehiclesTable({ vehicles, onEdit }: VehiclesTableProps) {
+export function VehiclesTable({ vehicles, onEdit, onArchive }: VehiclesTableProps) {
   return (
     <div className="rounded-xl border border-border bg-card shadow-sm">
       <Table>
         <TableHeader>
           <TableRow className="hover:bg-transparent">
-            <TableHead className="w-[72px]">Foto</TableHead>
+            <TableHead className="w-18">Foto</TableHead>
             <TableHead>Vehículo</TableHead>
             <TableHead className="hidden lg:table-cell">Inventario</TableHead>
             <TableHead>Año</TableHead>
             <TableHead className="text-right">Precio</TableHead>
             <TableHead>Estado</TableHead>
-            <TableHead className="w-[52px] text-right">
+            <TableHead className="w-13 text-right">
               <span className="sr-only">Acciones</span>
             </TableHead>
           </TableRow>
@@ -86,6 +87,11 @@ export function VehiclesTable({ vehicles, onEdit }: VehiclesTableProps) {
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-wrap gap-1">
+                    {v.archivedAt ? (
+                      <Badge variant="outline" className="text-muted-foreground">
+                        Archivado
+                      </Badge>
+                    ) : null}
                     {v.published ? (
                       <Badge variant="secondary">Publicado</Badge>
                     ) : (
@@ -112,9 +118,16 @@ export function VehiclesTable({ vehicles, onEdit }: VehiclesTableProps) {
                       <DropdownMenuSeparator />
                       <DropdownMenuGroup>
                         <DropdownMenuItem onClick={() => onEdit?.(v)}>Editar</DropdownMenuItem>
-                        <DropdownMenuItem disabled>Duplicar</DropdownMenuItem>
-                        <DropdownMenuItem disabled className="text-destructive">
-                          Archivar
+                        <DropdownMenuItem
+                          className={v.archivedAt ? "" : "text-destructive"}
+                          onClick={() => {
+                            const action = v.archivedAt ? "restaurar" : "archivar";
+                            if (window.confirm(`¿Seguro que deseas ${action} este vehículo?`)) {
+                              onArchive?.(v);
+                            }
+                          }}
+                        >
+                          {v.archivedAt ? "Restaurar" : "Archivar"}
                         </DropdownMenuItem>
                       </DropdownMenuGroup>
                     </DropdownMenuContent>

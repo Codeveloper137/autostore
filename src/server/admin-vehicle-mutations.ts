@@ -1,9 +1,10 @@
-import { CategoryKind, FuelType, Prisma, Transmission } from "@prisma/client";
+import { CategoryKind, FuelType, Prisma, Transmission, VehicleCondition } from "@prisma/client";
 
 import { categorySlug } from "@/lib/slug";
 
 export const FUELS = Object.values(FuelType);
 export const TRANSMISSIONS = Object.values(Transmission);
+export const CONDITIONS = Object.values(VehicleCondition);
 
 export function parseImageUrls(raw: unknown): string[] {
   if (Array.isArray(raw)) {
@@ -80,6 +81,8 @@ export type VehiclePayload = {
   currency: string;
   fuel: FuelType;
   transmission: Transmission;
+  condition: VehicleCondition;
+  salePriceAmount: number | null;
   published: boolean;
   featured: boolean;
   brandId: string;
@@ -108,6 +111,11 @@ export function parseVehiclePayload(body: Record<string, unknown>): { ok: true; 
   const modelId = body.modelId != null ? String(body.modelId).trim() : "";
   const modelName = body.modelName != null ? String(body.modelName) : "";
   const imageUrls = parseImageUrls(body.imageUrls);
+  const condition = (body.condition as VehicleCondition) ?? "USED";
+  const salePriceRaw =
+    body.salePriceAmount != null && body.salePriceAmount !== ""
+      ? Number(body.salePriceAmount)
+      : null;
 
   if (title.length < 2) {
     return { ok: false, error: "El título es obligatorio (mín. 2 caracteres)." };
@@ -129,6 +137,17 @@ export function parseVehiclePayload(body: Record<string, unknown>): { ok: true; 
   }
   if (!TRANSMISSIONS.includes(transmission)) {
     return { ok: false, error: "Transmisión no válida." };
+  }
+  if (!CONDITIONS.includes(condition)) {
+    return { ok: false, error: "Condición del vehículo no válida." };
+  }
+  if (salePriceRaw !== null) {
+    if (!Number.isFinite(salePriceRaw) || salePriceRaw <= 0) {
+      return { ok: false, error: "El precio de oferta debe ser mayor que 0." };
+    }
+    if (salePriceRaw >= priceAmount) {
+      return { ok: false, error: "El precio de oferta debe ser menor al precio regular." };
+    }
   }
 
   const stockCode = stockCodeRaw.length > 0 ? stockCodeRaw : null;
@@ -155,6 +174,8 @@ export function parseVehiclePayload(body: Record<string, unknown>): { ok: true; 
       modelId,
       modelName,
       imageUrls,
+      condition, 
+      salePriceAmount: salePriceRaw !== null ? Math.round(salePriceRaw) : null,
     },
   };
 }

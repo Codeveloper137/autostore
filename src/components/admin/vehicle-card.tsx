@@ -6,7 +6,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { formatMileage, formatVehiclePrice } from "@/lib/format";
 import { fuelLabel, transmissionLabel } from "@/lib/vehicle-labels";
 import { cn } from "@/lib/utils";
-import type { FuelType, Transmission } from "@prisma/client";
+import type { FuelType, Transmission, VehicleCondition } from "@prisma/client";
 
 export type VehicleCardProps = {
   id: string;
@@ -21,6 +21,8 @@ export type VehicleCardProps = {
   priceAmount: number;
   currency: string;
   imageUrls: string[];
+  condition?: VehicleCondition;
+  salePriceAmount?: number | null;
   href?: string;
   className?: string;
 };
@@ -37,6 +39,8 @@ export function VehicleCard({
   priceAmount,
   currency,
   imageUrls,
+  condition,
+  salePriceAmount,
   href = "#",
   className,
 }: VehicleCardProps) {
@@ -51,7 +55,7 @@ export function VehicleCard({
       )}
     >
       <CardHeader className="relative p-0">
-        <Link href={href} className="relative block aspect-[16/10] overflow-hidden bg-muted">
+        <Link href={href} className="relative block aspect-16/10 overflow-hidden bg-muted">
           {cover ? (
             // URLs de inventario pueden ser de cualquier dominio (S3, CDN, etc.)
             // eslint-disable-next-line @next/next/no-img-element
@@ -65,9 +69,18 @@ export function VehicleCard({
               Sin imagen
             </div>
           )}
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+          <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/70 via-black/20 to-transparent" />
           <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
-            <p className="text-[11px] font-medium uppercase tracking-wider text-white/80">{year}</p>
+            
+            <div className="flex items-center gap-2">
+              <p className="text-[11px] font-medium uppercase tracking-wider text-white/80">{year}</p>
+              {condition === "NEW" ? (
+                <span className="rounded-full bg-emerald-500/90 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+                  Nuevo
+                </span>
+              ) : null}
+            </div>
+            
             <h3 className="line-clamp-2 font-heading text-lg font-semibold leading-snug">{title}</h3>
             <p className="text-sm text-white/90">{subtitle}</p>
           </div>
@@ -102,9 +115,20 @@ export function VehicleCard({
           <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
             Precio
           </p>
-          <p className="text-lg font-semibold tabular-nums tracking-tight">
-            {formatVehiclePrice(priceAmount, currency)}
-          </p>
+          {salePriceAmount ? (
+            <>
+              <p className="text-sm tabular-nums text-muted-foreground line-through">
+                {formatVehiclePrice(priceAmount, currency)}
+              </p>
+              <p className="text-lg font-semibold tabular-nums tracking-tight text-destructive">
+                {formatVehiclePrice(salePriceAmount, currency)}
+              </p>
+            </>
+          ) : (
+            <p className="text-lg font-semibold tabular-nums tracking-tight">
+              {formatVehiclePrice(priceAmount, currency)}
+            </p>
+          )}
         </div>
         <Link
           href={href}

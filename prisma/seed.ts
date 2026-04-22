@@ -23,7 +23,6 @@ async function main() {
     },
   });
 
-  // eslint-disable-next-line no-console -- script output
   console.log(`Usuario ADMIN listo: ${email}`);
 }
 

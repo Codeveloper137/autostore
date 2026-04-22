@@ -10,7 +10,7 @@ export function SiteFooter() {
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
           <div className="space-y-3">
-            <p className="font-heading text-sm font-semibold tracking-tight">De La Espriella Motors</p>
+            <p className="font-heading text-sm font-semibold tracking-tight">Auto Store Motors</p>
             <p className="text-sm leading-relaxed text-muted-foreground">
               Concesionario de vehículos nuevos y usados. Asesoría transparente, inventario verificado y acompañamiento
               en cada paso de tu compra.
@@ -77,7 +77,7 @@ export function SiteFooter() {
         </div>
         <Separator className="my-8" />
         <div className="flex flex-col gap-3 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-          <p>© {year} De La Espriella Motors. Todos los derechos reservados.</p>
+          <p>© {year} Auto Store Motors. Todos los derechos reservados.</p>
           <p className="sm:text-right">Precios y disponibilidad sujetos a cambio sin previo aviso.</p>
         </div>
       </div>

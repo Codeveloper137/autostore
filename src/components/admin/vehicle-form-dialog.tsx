@@ -1,7 +1,7 @@
 "use client";
 
 import type { Category, Vehicle } from "@prisma/client";
-import { FuelType, Transmission } from "@prisma/client";
+import { FuelType, Transmission, VehicleCondition } from "@prisma/client";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Loader2, Plus, Trash2, X } from "lucide-react";
 import { useEffect, useId, useState } from "react";
@@ -31,6 +31,7 @@ import { cn } from "@/lib/utils";
 
 const FUELS = Object.values(FuelType);
 const TRANSMISSIONS = Object.values(Transmission);
+const CONDITIONS = Object.values(VehicleCondition);
 
 const NEW_CAT = "__new__";
 
@@ -107,6 +108,8 @@ function emptyForm() {
     description: "",
     published: false,
     featured: false,
+    condition: "USED" as VehicleCondition,
+    salePriceAmount: "",
     existingUrls: [] as string[],
     pendingFiles: [] as File[],
   };
@@ -139,6 +142,8 @@ export function VehicleFormDialog({ mode, open, onOpenChange, initialVehicle, on
   const [description, setDescription] = useState("");
   const [published, setPublished] = useState(false);
   const [featured, setFeatured] = useState(false);
+  const [condition, setCondition] = useState<VehicleCondition>("USED");
+  const [salePriceAmount, setSalePriceAmount] = useState("");
   const [existingUrls, setExistingUrls] = useState<string[]>([]);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [formError, setFormError] = useState<string | null>(null);
@@ -164,6 +169,8 @@ export function VehicleFormDialog({ mode, open, onOpenChange, initialVehicle, on
         setDescription(initialVehicle.description);
         setPublished(initialVehicle.published);
         setFeatured(initialVehicle.featured);
+        setCondition(initialVehicle.condition);
+        setSalePriceAmount(String(initialVehicle.salePriceAmount ?? ""));
         setExistingUrls([...initialVehicle.imageUrls]);
         setPendingFiles([]);
         setFormError(null);
@@ -186,6 +193,8 @@ export function VehicleFormDialog({ mode, open, onOpenChange, initialVehicle, on
         setDescription(e.description);
         setPublished(e.published);
         setFeatured(e.featured);
+        setCondition(e.condition);
+        setSalePriceAmount(e.salePriceAmount);
         setExistingUrls(e.existingUrls);
         setPendingFiles(e.pendingFiles);
         setFormError(null);
@@ -210,10 +219,8 @@ export function VehicleFormDialog({ mode, open, onOpenChange, initialVehicle, on
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const uploaded = await uploadImageFiles(pendingFiles);
-      const imageUrls = [...existingUrls, ...uploaded];
-
-      const payload = {
+      // ── Paso 1: construir payload con las URLs ya existentes (sin subir aún) ──
+      const basePayload = {
         title,
         stockCode: stockCode.trim() || undefined,
         brandId: brandId !== NEW_CAT ? brandId : undefined,
@@ -229,34 +236,52 @@ export function VehicleFormDialog({ mode, open, onOpenChange, initialVehicle, on
         currency,
         shortDescription: shortDescription.trim() || undefined,
         description: description.trim() || undefined,
-        imageUrls,
+        imageUrls: existingUrls,   // <-- solo URLs ya guardadas
         published,
         featured,
+        condition,
+        salePriceAmount: salePriceAmount ? Number(salePriceAmount) : undefined,
       };
+
+      // ── Paso 2: guardar el vehículo ANTES de subir archivos ──
+      // Si esto falla, no se sube ninguna imagen.
+      let savedId: string;
 
       if (mode === "edit" && initialVehicle) {
         const res = await fetch(`/api/admin/vehicles/${initialVehicle.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+          body: JSON.stringify(basePayload),
         });
-        const data = (await res.json().catch(() => ({}))) as { error?: string };
-        if (!res.ok) {
-          throw new Error(data.error ?? "Error al actualizar el vehículo");
-        }
-        return data;
+        const data = (await res.json().catch(() => ({}))) as { error?: string; id?: string };
+        if (!res.ok) throw new Error(data.error ?? "Error al actualizar el vehículo");
+        savedId = initialVehicle.id;
+      } else {
+        const res = await fetch("/api/admin/vehicles", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(basePayload),
+        });
+        const data = (await res.json().catch(() => ({}))) as { error?: string; id?: string };
+        if (!res.ok) throw new Error(data.error ?? "Error al crear el vehículo");
+        savedId = (data as { id: string }).id;
       }
 
-      const res = await fetch("/api/admin/vehicles", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const data = (await res.json().catch(() => ({}))) as { error?: string };
-      if (!res.ok) {
-        throw new Error(data.error ?? "Error al crear el vehículo");
+      // ── Paso 3: subir archivos nuevos solo si el vehículo ya existe ──
+      // Si el upload falla, el vehículo ya está guardado (sin las fotos nuevas).
+      // El admin puede editarlo de nuevo para reintentar.
+      if (pendingFiles.length > 0) {
+        const uploaded = await uploadImageFiles(pendingFiles);
+        const finalUrls = [...existingUrls, ...uploaded];
+
+        const res = await fetch(`/api/admin/vehicles/${savedId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...basePayload, imageUrls: finalUrls }),
+        });
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        if (!res.ok) throw new Error(data.error ?? "Error al guardar las imágenes");
       }
-      return data;
     },
     onSuccess: () => {
       setFormError(null);
@@ -450,6 +475,22 @@ export function VehicleFormDialog({ mode, open, onOpenChange, initialVehicle, on
               </div>
             </div>
 
+          <div className="space-y-2">
+            <Label>Condición del vehículo</Label>
+            <Select value={condition} onValueChange={(v) => v && setCondition(v as VehicleCondition)}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {CONDITIONS.map((c) => (
+                  <SelectItem key={c} value={c}>
+                    {c === "NEW" ? "Nuevo" : "Usado"}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="vf-price">Precio ({currency})</Label>
@@ -473,6 +514,22 @@ export function VehicleFormDialog({ mode, open, onOpenChange, initialVehicle, on
                 />
               </div>
             </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="vf-sale-price">Precio de oferta (opcional)</Label>
+            <Input
+              id="vf-sale-price"
+              type="number"
+              min={1}
+              step={1}
+              value={salePriceAmount}
+              onChange={(e) => setSalePriceAmount(e.target.value)}
+              placeholder="Dejar vacío si no hay oferta"
+            />
+            <p className="text-xs text-muted-foreground">
+              Si se indica, el precio regular aparecerá tachado en el catálogo.
+            </p>
+          </div>
 
             <div className="space-y-2">
               <Label htmlFor="vf-short">Resumen (opcional)</Label>

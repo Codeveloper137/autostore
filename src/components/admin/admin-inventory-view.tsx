@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { useState } from "react";
 
@@ -35,6 +35,19 @@ export function AdminInventoryView() {
     void queryClient.invalidateQueries({ queryKey: ["admin", "vehicles"] });
     void queryClient.invalidateQueries({ queryKey: ["admin", "categories"] });
   };
+
+  const archiveMutation = useMutation({
+    mutationFn: async (vehicle: VehicleRow) => {
+      const res = await fetch(`/api/admin/vehicles/${vehicle.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ archived: vehicle.archivedAt === null }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) throw new Error(data.error ?? "Error al archivar el vehículo");
+    },
+    onSuccess: invalidateVehicles,
+  });
 
   return (
     <div className="space-y-10">
@@ -116,7 +129,11 @@ export function AdminInventoryView() {
         ) : null}
 
         {data && data.length > 0 ? (
-          <VehiclesTable vehicles={data} onEdit={(v) => setEditingVehicle(v)} />
+          <VehiclesTable
+            vehicles={data}
+            onEdit={(v) => setEditingVehicle(v)}
+            onArchive={(v) => archiveMutation.mutate(v)}
+          />
         ) : null}
       </section>
 
@@ -134,8 +151,8 @@ export function AdminInventoryView() {
 
         {isPending ? (
           <div className="grid gap-4 sm:grid-cols-2">
-            <Skeleton className="aspect-[16/10] min-h-[280px] rounded-xl" />
-            <Skeleton className="aspect-[16/10] min-h-[280px] rounded-xl" />
+            <Skeleton className="aspect-16/10 min-h-70 rounded-xl" />
+            <Skeleton className="aspect-16/10 min-h-70 rounded-xl" />
           </div>
         ) : isError ? (
           <p className="rounded-xl border border-dashed border-border bg-muted/30 px-4 py-10 text-center text-sm text-muted-foreground">
@@ -158,6 +175,8 @@ export function AdminInventoryView() {
                 priceAmount={v.priceAmount}
                 currency={v.currency}
                 imageUrls={v.imageUrls}
+                condition={v.condition}
+                salePriceAmount={v.salePriceAmount}
                 href={`/vehiculos/${v.id}`}
               />
             ))}

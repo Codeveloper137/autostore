@@ -1,4 +1,4 @@
-// De La Espriella Motors — PostgreSQL schema
+// Auto Store Motors — PostgreSQL schema
 // Capa de persistencia: modelos alineados al dominio del concesionario.
 
 generator client {
@@ -45,6 +45,11 @@ enum FuelType {
   HYBRID
   LPG
   OTHER
+}
+
+enum VehicleCondition {
+  NEW
+  USED
 }
 
 enum AnalyticsEventType {
@@ -181,6 +186,13 @@ model Vehicle {
   /// Mostrar en portada (home) cuando también esté publicado
   featured  Boolean @default(false)
 
+  /// Condición del vehículo: nuevo de agencia o usado
+  condition       VehicleCondition @default(USED)
+  /// Precio de oferta/promoción (opcional, debe ser menor a priceAmount)
+  salePriceAmount Int?
+  /// Fecha de archivado (soft-delete). Null = activo, valor = archivado.
+  archivedAt      DateTime?
+
   quotes          Quote[]
   favorites       Favorite[]
   analyticsEvents AnalyticsEvent[]
@@ -191,6 +203,7 @@ model Vehicle {
   @@index([published, year])
   @@index([published, featured])
   @@index([brandId, modelId])
+  @@index([archivedAt])
 }
 
 // --- CRM / cotizaciones ---

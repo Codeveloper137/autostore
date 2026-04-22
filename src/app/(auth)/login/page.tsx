@@ -10,15 +10,19 @@ export const metadata: Metadata = {
 
 function LoginFormFallback() {
   return (
-    <div className="h-[320px] w-full max-w-md animate-pulse rounded-xl border border-border bg-muted/40" />
+    <div className="heigth: 320px w-full max-w-md animate-pulse rounded-xl border border-border bg-muted/40" />
   );
 }
+
+const googleEnabled =
+  Boolean(process.env.AUTH_GOOGLE_ID?.length) &&
+  Boolean(process.env.AUTH_GOOGLE_SECRET?.length);
 
 export default function LoginPage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-muted/30 px-4 py-12">
       <Suspense fallback={<LoginFormFallback />}>
-        <LoginForm />
+        <LoginForm googleEnabled={googleEnabled} />
       </Suspense>
     </div>
   );

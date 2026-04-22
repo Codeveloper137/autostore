@@ -6,7 +6,7 @@ import { buildWhatsAppLink } from "@/lib/whatsapp";
 import { cn } from "@/lib/utils";
 
 const DEFAULT_MESSAGE =
-  "Hola, me gustaría recibir más información sobre los vehículos disponibles en De La Espriella Motors.";
+  "Hola, me gustaría recibir más información sobre los vehículos disponibles en Auto Store Motors.";
 
 export function FloatingWhatsApp({ className }: { className?: string }) {
   const raw = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER;

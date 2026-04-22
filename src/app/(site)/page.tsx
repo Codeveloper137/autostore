@@ -8,7 +8,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { prisma } from "@/infrastructure/persistence/prisma";
 import { cn } from "@/lib/utils";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 type VehicleWithCategories = Vehicle & { brand: Category; model: Category };
 
@@ -16,7 +16,7 @@ export default async function Home() {
   let featured: VehicleWithCategories[] = [];
   try {
     featured = await prisma.vehicle.findMany({
-      where: { published: true, featured: true },
+      where: { published: true, featured: true, archivedAt: null },
       orderBy: { updatedAt: "desc" },
       include: { brand: true, model: true },
       take: 12,
@@ -30,11 +30,11 @@ export default async function Home() {
 
   return (
     <div>
-      <section className="border-b border-border bg-gradient-to-b from-muted/50 to-background">
+      <section className="border-b border-border bg-linear-to-b from-muted/50 to-background">
         <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-16 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:py-24">
           <div className="max-w-xl space-y-4">
             <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
-              De La Espriella Motors
+              Auto Store Motors
             </p>
             <h1 className="font-heading text-4xl font-semibold tracking-tight sm:text-5xl">
               El vehículo que buscas, con respaldo de confianza
@@ -44,18 +44,12 @@ export default async function Home() {
               la unidad ideal.
             </p>
             <div className="flex flex-wrap gap-3 pt-2">
-              <Link href="/vehiculos" className={cn(buttonVariants({ size: "lg" }), "min-w-[180px] justify-center")}>
+              <Link href="/vehiculos" className={cn(buttonVariants({ size: "lg" }), "min-w-45 justify-center")}>
                 Ver catálogo
               </Link>
               <Link
-                href="/admin/inventory"
-                className={cn(buttonVariants({ variant: "outline", size: "lg" }), "min-w-[180px] justify-center")}
-              >
-                Panel administración
-              </Link>
-              <Link
                 href="/#contacto"
-                className={cn(buttonVariants({ variant: "secondary", size: "lg" }), "min-w-[180px] justify-center")}
+                className={cn(buttonVariants({ variant: "secondary", size: "lg" }), "min-w-45 justify-center")}
               >
                 Contactar
               </Link>
@@ -110,6 +104,8 @@ export default async function Home() {
                   priceAmount={v.priceAmount}
                   currency={v.currency}
                   imageUrls={v.imageUrls}
+                  condition={v.condition}
+                  salePriceAmount={v.salePriceAmount}
                   href={`/vehiculos/${v.id}`}
                 />
               ))}

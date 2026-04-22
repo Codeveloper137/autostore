@@ -1,8 +1,10 @@
-import { CategoryKind } from "@prisma/client";
+import { CategoryKind, Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 
 import { auth } from "@/auth";
 import { prisma } from "@/infrastructure/persistence/prisma";
+import { prismaQueryErrorResponse } from "@/lib/prisma-api-error";
+
 import { parseVehiclePayload, resolveCategory } from "@/server/admin-vehicle-mutations";
 
 export const dynamic = "force-dynamic";
@@ -20,17 +22,27 @@ export async function PATCH(req: Request, context: RouteContext) {
     return NextResponse.json({ error: "ID inválido" }, { status: 400 });
   }
 
-  const existing = await prisma.vehicle.findUnique({ where: { id } });
-  if (!existing) {
-    return NextResponse.json({ error: "Vehículo no encontrado." }, { status: 404 });
-  }
-
   let body: Record<string, unknown>;
   try {
     body = (await req.json()) as Record<string, unknown>;
   } catch {
     return NextResponse.json({ error: "JSON inválido" }, { status: 400 });
   }
+
+  // Acción rápida: archivar / restaurar
+  if (typeof body.archived === "boolean") {
+    try {
+      const vehicle = await prisma.vehicle.update({
+        where: { id },
+        data: { archivedAt: body.archived ? new Date() : null },
+        include: { brand: true, model: true },
+      });
+      return NextResponse.json(vehicle);
+    } catch (e) {
+      return prismaQueryErrorResponse("[PATCH /api/admin/vehicles/[id] archive]", e);
+    }
+  }
+
 
   const parsed = parseVehiclePayload(body);
   if (!parsed.ok) {
@@ -72,6 +84,8 @@ export async function PATCH(req: Request, context: RouteContext) {
           imageUrls: d.imageUrls,
           published: d.published,
           featured: d.featured,
+          condition: d.condition,
+          salePriceAmount: d.salePriceAmount,
         },
         include: { brand: true, model: true },
       });
@@ -81,6 +95,16 @@ export async function PATCH(req: Request, context: RouteContext) {
   } catch (e) {
     const message = e instanceof Error ? e.message : "Error al actualizar el vehículo.";
     console.error("[PATCH /api/admin/vehicles/[id]]", e);
+    
+   // P2025 = Record not found — ocurre si el vehículo fue eliminado
+   // entre el inicio del request y el update dentro de la transacción.
+    if (
+      e instanceof Prisma.PrismaClientKnownRequestError &&
+      e.code === "P2025"
+    ) {
+      return NextResponse.json({ error: "Vehículo no encontrado." }, { status: 404 });
+    }
+
     if (message.includes("Unique constraint") || message.includes("stockCode")) {
       return NextResponse.json(
         { error: "Ya existe un vehículo con ese código de inventario." },

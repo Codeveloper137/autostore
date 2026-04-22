@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { cache } from 'react';
 import type { LucideIcon } from "lucide-react";
 import { Fuel, Gauge, MessageCircle, Palette, Settings2 } from "lucide-react";
 
@@ -12,19 +13,21 @@ import { fuelLabel, transmissionLabel } from "@/lib/vehicle-labels";
 import { cn } from "@/lib/utils";
 import { prisma } from "@/infrastructure/persistence/prisma";
 
+// cache() de React deduplicará la query dentro del mismo render:
+// generateMetadata y la page function comparten el mismo resultado.
+const getVehicle = cache(async (id: string) => {
+  return prisma.vehicle.findFirst({
+    where: { id, published: true },
+    include: { brand: true, model: true },
+  });
+});
+
+
 type Props = { params: Promise<{ id: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
-  const v = await prisma.vehicle.findFirst({
-    where: { id, published: true },
-    select: {
-      title: true,
-      shortDescription: true,
-      brand: { select: { name: true } },
-      model: { select: { name: true } },
-    },
-  });
+  const v = await getVehicle(id);
   if (!v) return { title: "Vehículo" };
   return {
     title: `${v.title} · ${v.brand.name} ${v.model.name}`,
@@ -32,15 +35,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export default async function VehiculoDetallePage({ params }: Props) {
   const { id } = await params;
 
-  const vehicle = await prisma.vehicle.findFirst({
-    where: { id, published: true },
-    include: { brand: true, model: true },
-  });
+  const vehicle = await getVehicle(id)
 
   if (!vehicle) notFound();
 
@@ -76,9 +76,22 @@ export default async function VehiculoDetallePage({ params }: Props) {
 
           <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
             <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Precio</p>
-            <p className="mt-1 text-3xl font-semibold tabular-nums tracking-tight">
-              {formatVehiclePrice(vehicle.priceAmount, vehicle.currency)}
-            </p>
+            
+            {vehicle.salePriceAmount ? (
+              <>
+                <p className="mt-1 text-lg tabular-nums text-muted-foreground line-through">
+                  {formatVehiclePrice(vehicle.priceAmount, vehicle.currency)}
+                </p>
+                <p className="text-3xl font-semibold tabular-nums tracking-tight text-destructive">
+                  {formatVehiclePrice(vehicle.salePriceAmount, vehicle.currency)}
+                </p>
+              </>
+            ) : (
+              <p className="mt-1 text-3xl font-semibold tabular-nums tracking-tight">
+                {formatVehiclePrice(vehicle.priceAmount, vehicle.currency)}
+              </p>
+            )}
+
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">

@@ -1,5 +1,5 @@
 "use client";
-
+import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { useState } from "react";
@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export function LoginForm() {
+export function LoginForm({ googleEnabled }: { googleEnabled?: boolean }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") ?? "/admin/inventory";
@@ -51,11 +51,28 @@ export function LoginForm() {
       <CardHeader className="space-y-1">
         <CardTitle className="font-heading text-2xl">Iniciar sesión</CardTitle>
         <CardDescription>
-          Acceso al panel de <span className="font-medium text-foreground">De La Espriella Motors</span>
+          Acceso al panel de <span className="font-medium text-foreground">Auto Store Motors</span>
         </CardDescription>
       </CardHeader>
       <form onSubmit={onSubmit}>
         <CardContent className="space-y-4">
+          {googleEnabled ? (
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => void signIn("google", { callbackUrl })}
+              >
+                Continuar con Google
+              </Button>
+              <div className="relative flex items-center gap-3">
+                <div className="h-px flex-1 bg-border" />
+                <span className="text-xs text-muted-foreground">o con correo</span>
+                <div className="h-px flex-1 bg-border" />
+              </div>
+            </>
+          ) : null}
           <div className="space-y-2">
             <Label htmlFor="email">Correo</Label>
             <Input
@@ -86,6 +103,12 @@ export function LoginForm() {
           <Button type="submit" className="w-full" disabled={pending}>
             {pending ? "Entrando…" : "Entrar"}
           </Button>
+          <p className="text-center text-sm text-muted-foreground">
+            ¿No tienes cuenta?{" "}
+            <Link href="/register" className="font-medium text-foreground underline-offset-4 hover:underline">
+              Crear cuenta
+            </Link>
+          </p>
         </CardFooter>
       </form>
     </Card>

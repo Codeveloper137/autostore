@@ -5,7 +5,7 @@ import { AdminShell } from "@/components/admin/admin-shell";
 export const metadata: Metadata = {
   title: {
     default: "Administración",
-    template: "%s · De La Espriella Motors",
+    template: "%s · Auto Store Motors",
   },
 };
 
