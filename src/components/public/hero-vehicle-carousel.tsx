@@ -2,14 +2,12 @@
 
 import type { Category, Vehicle } from "@prisma/client";
 import Link from "next/link";
-import { useEffect, useState, useCallback } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import Image from "next/image"; // Cambiado para mejor rendimiento
+import { useEffect, useState } from "react";
+import Image from "next/image";
 
 import { buttonVariants } from "@/components/ui/button";
 import { formatVehiclePrice } from "@/lib/format";
 import { cn } from "@/lib/utils";
-
 
 type VehicleWithCategories = Vehicle & { brand: Category; model: Category };
 
@@ -19,27 +17,20 @@ type HeroVehicleCarouselProps = {
 
 export function HeroVehicleCarousel({ vehicles }: HeroVehicleCarouselProps) {
   const [index, setIndex] = useState(0);
-  const [paused, setPaused] = useState(false);
+  // 1. Definimos el estado para la pausa
+  const [isPaused, setIsPaused] = useState(false);
 
-  const prev = useCallback(() => {
-    setPaused(true);
-    setIndex((i) => (i - 1 + vehicles.length) % vehicles.length);
-  }, [vehicles.length]);
-
-  const next = useCallback(() => {
-    setPaused(true);
-    setIndex((i) => (i + 1) % vehicles.length);
-  }, [vehicles.length]);
-
+  // 2. Actualizamos el efecto para que dependa también de isPaused
   useEffect(() => {
-    if (vehicles.length <= 1 || paused) return;
-    
-    const t = setInterval(() => {
-      setIndex((i) => (i + 1) % vehicles.length);
-    }, 8000); // 8 segundos es un estándar más dinámico
+    // Si hay menos de un vehículo O está pausado, no iniciamos el intervalo
+    if (vehicles.length <= 1 || isPaused) return;
 
-    return () => clearInterval(t);
-  }, [vehicles.length, paused]);
+    const t = window.setInterval(() => {
+      setIndex((i) => (i + 1) % vehicles.length);
+    }, 10_000);
+
+    return () => window.clearInterval(t);
+  }, [vehicles.length, isPaused]); // isPaused ahora es una dependencia
 
   // Caso: No hay vehículos
   if (vehicles.length === 0) {
@@ -63,8 +54,8 @@ export function HeroVehicleCarousel({ vehicles }: HeroVehicleCarouselProps) {
   return (
     <div 
       className="relative aspect-4/3 w-full max-w-md overflow-hidden rounded-2xl border border-border bg-muted shadow-sm lg:max-w-lg"
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
+      onMouseEnter={() => setIsPaused(true)} // 3. Usamos setIsPaused
+      onMouseLeave={() => setIsPaused(false)} // 3. Usamos setIsPaused
     >
       {/* Imagen de fondo */}
       {cover ? (
@@ -75,7 +66,7 @@ export function HeroVehicleCarousel({ vehicles }: HeroVehicleCarouselProps) {
           priority 
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           className="absolute inset-0 size-full object-cover transition-opacity duration-500"
-          key={v.id} // Ayuda a React a animar el cambio de imagen
+          key={v.id}
         />
       ) : (
         <div className="absolute inset-0 bg-linear-to-br from-muted to-muted-foreground/20" />
@@ -84,27 +75,6 @@ export function HeroVehicleCarousel({ vehicles }: HeroVehicleCarouselProps) {
       {/* Overlay Gradiente */}
       <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/30 to-transparent" />
       
-      {/* Controles de navegación */}
-      {vehicles.length > 1 && (
-        <>
-          <button
-            type="button"
-            aria-label="Anterior"
-            onClick={prev}
-            className="absolute left-3 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/40 p-2 text-white backdrop-blur-sm transition hover:bg-black/60 active:scale-95"
-          >
-            <ChevronLeft className="size-5" aria-hidden />
-          </button>
-          <button
-            type="button"
-            aria-label="Siguiente"
-            onClick={next}
-            className="absolute right-3 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/40 p-2 text-white backdrop-blur-sm transition hover:bg-black/60 active:scale-95"
-          >
-            <ChevronRight className="size-5" aria-hidden />
-          </button>
-        </>
-      )}
 
       {/* Contenido de texto */}
       <div className="relative flex h-full flex-col justify-end p-6 text-white">
@@ -143,7 +113,7 @@ export function HeroVehicleCarousel({ vehicles }: HeroVehicleCarouselProps) {
                   i === index ? "bg-white" : "bg-white/30 hover:bg-white/50",
                 )}
                 onClick={() => {
-                  setPaused(true);
+                  setIsPaused(true); // 3. Usamos setIsPaused
                   setIndex(i);
                 }}
               />

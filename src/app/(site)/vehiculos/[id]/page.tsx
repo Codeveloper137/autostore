@@ -13,6 +13,9 @@ import { fuelLabel, transmissionLabel } from "@/lib/vehicle-labels";
 import { cn } from "@/lib/utils";
 import { prisma } from "@/infrastructure/persistence/prisma";
 
+import { TrackView } from "@/app/api/analytics/track-view";
+
+
 // cache() de React deduplicará la query dentro del mismo render:
 // generateMetadata y la page function comparten el mismo resultado.
 const getVehicle = cache(async (id: string) => {
@@ -52,17 +55,22 @@ export default async function VehiculoDetallePage({ params }: Props) {
     : null;
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:py-12">
-      <div className="mb-6 text-sm text-muted-foreground">
+    <div className="mx-auto max-w-6xl px-0 py-0 sm:px-6 sm:py-8 lg:py-12">
+
+      <TrackView type="VEHICLE_VIEW" vehicleId={vehicle.id} path={`/vehiculos/${vehicle.id}`} />
+
+      <div className="mb-4 px-4 pt-4 text-sm text-muted-foreground sm:mb-6 sm:px-0 sm:pt-0">
         <Link href="/vehiculos" className="hover:text-foreground">
           ← Catálogo
         </Link>
       </div>
 
-      <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:gap-12">
+      {/* Columna en móvil, grid equilibrado 50/50 en desktop */}
+      <div className="grid gap-8 lg:grid-cols-2 lg:gap-12">
+
         <VehicleImageGallery urls={vehicle.imageUrls} title={vehicle.title} />
 
-        <div className="space-y-6">
+        <div className="space-y-6 px-4 pb-8 sm:px-0">
           <div>
             <p className="text-sm font-medium text-muted-foreground">{vehicle.year}</p>
             <h1 className="font-heading text-3xl font-semibold tracking-tight sm:text-4xl">{vehicle.title}</h1>

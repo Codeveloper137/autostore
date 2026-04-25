@@ -41,6 +41,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const ok = await bcrypt.compare(password, user.passwordHash);
         if (!ok) return null;
 
+        if (user.bannedAt) return null;
+
+
         return {
           id: user.id,
           email: user.email ?? "",

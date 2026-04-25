@@ -8,6 +8,9 @@ import { buttonVariants } from "@/components/ui/button";
 import { prisma } from "@/infrastructure/persistence/prisma";
 import { cn } from "@/lib/utils";
 
+import { TrackView } from "@/app/api/analytics/track-view";
+
+
 export const revalidate = 60;
 
 type VehicleWithCategories = Vehicle & { brand: Category; model: Category };
@@ -30,6 +33,8 @@ export default async function Home() {
 
   return (
     <div>
+      <TrackView type="SITE_VIEW" path="/" />
+
       <section className="border-b border-border bg-linear-to-b from-muted/50 to-background">
         <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-16 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:py-24">
           <div className="max-w-xl space-y-4">

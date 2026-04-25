@@ -70,6 +70,7 @@ model ContentPage {
   title       String
   excerpt     String?
   body        String        @db.Text
+  coverImageUrl String?
   status      ContentStatus @default(DRAFT)
   publishedAt DateTime?
 
@@ -77,6 +78,7 @@ model ContentPage {
   updatedAt DateTime @updatedAt
 
   @@index([status, slug])
+  
 }
 
 // --- Auth (NextAuth.js + extensión de rol) ---
@@ -90,6 +92,8 @@ model User {
   role          UserRole  @default(CLIENT)
   /// Hash bcrypt; solo usuarios con proveedor "credentials"
   passwordHash  String?
+  bannedAt      DateTime?
+  archivedAt    DateTime?
 
   accounts Account[]
   sessions Session[]
@@ -262,4 +266,11 @@ model AnalyticsEvent {
 
   @@index([type, createdAt])
   @@index([vehicleId, createdAt])
+}
+
+/// Configuración general del sitio (clave → valor JSON)
+model SiteSetting {
+  key       String   @id
+  value     String   @db.Text
+  updatedAt DateTime @updatedAt
 }

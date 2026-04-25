@@ -1,16 +1,16 @@
 import Link from "next/link";
 
-import { AuthNav } from "@/components/public/auth-nav";
-
-
 import { auth } from "@/auth";
-
+import { AuthNav } from "@/components/public/auth-nav";
+import { MobileMenu } from "@/components/public/mobile-menu";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const links = [
   { href: "/", label: "Inicio" },
   { href: "/vehiculos", label: "Catálogo" },
+  { href: "/blogs", label: "Blog" },
+  { href: "/sobre-nosotros", label: "Nosotros" },
   { href: "/#contacto", label: "Contacto" },
 ];
 
@@ -24,7 +24,9 @@ export async function SiteHeader() {
         <Link href="/" className="font-heading text-sm font-semibold tracking-tight sm:text-base">
           Auto Store Motors
         </Link>
-        <nav className="flex flex-wrap items-center justify-end gap-1 text-sm sm:gap-2">
+
+        {/* Nav desktop */}
+        <nav className="hidden items-center gap-1 text-sm md:flex">
           {links.map((item) => (
             <Link
               key={item.href}
@@ -40,14 +42,19 @@ export async function SiteHeader() {
           {isAdmin ? (
             <Link
               href="/admin/inventory"
-              className={cn(buttonVariants({ variant: "outline", size: "sm" }), "hidden sm:inline-flex")}
+              className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
             >
               Administración
             </Link>
           ) : null}
           <AuthNav session={session} />
-
         </nav>
+
+        {/* Hamburguesa móvil — client component */}
+        <div className="flex items-center gap-2 md:hidden">
+          <AuthNav session={session} />
+          <MobileMenu links={links} isAdmin={isAdmin} />
+        </div>
       </div>
     </header>
   );

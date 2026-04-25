@@ -14,6 +14,9 @@ import { prisma } from "@/infrastructure/persistence/prisma";
 import { fuelLabel, transmissionLabel } from "@/lib/vehicle-labels";
 import { cn } from "@/lib/utils";
 
+import { TrackView } from "@/app/api/analytics/track-view";
+
+
 type VehicleWithCategories = Vehicle & { brand: Category; model: Category };
 
 export const metadata: Metadata = {
@@ -130,7 +133,10 @@ export default async function VehiculosPage({ searchParams }: PageProps) {
   const hasFilters = Object.values(sp).some((v) => v != null && v !== "");
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+    <div className="mx-auto w-full max-w-6xl overflow-x-hidden px-4 py-10 sm:px-6">
+
+      <TrackView type="PAGE_VIEW" path="/vehiculos" />
+
       <div className="mb-10 max-w-2xl space-y-2">
         <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">Inventario</p>
         <h1 className="font-heading text-3xl font-semibold tracking-tight sm:text-4xl">Vehículos disponibles</h1>
@@ -141,10 +147,10 @@ export default async function VehiculosPage({ searchParams }: PageProps) {
 
       <form
         method="get"
-        className="mb-10 space-y-4 rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-6"
+        className="mb-10 w-full space-y-4 rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-6"
         aria-label="Filtros del catálogo"
       >
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {/* 1. BUSCAR */}
           <div className="space-y-2 sm:col-span-2 lg:col-span-1">
             <label htmlFor="flt-q" className="text-xs font-medium text-muted-foreground">
@@ -382,7 +388,7 @@ export default async function VehiculosPage({ searchParams }: PageProps) {
             Mostrando <span className="font-medium text-foreground">{vehicles.length}</span>{" "}
             {vehicles.length === 1 ? "vehículo" : "vehículos"}
           </p>
-          <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {vehicles.map((v) => (
               <VehicleCard
                 key={v.id}
