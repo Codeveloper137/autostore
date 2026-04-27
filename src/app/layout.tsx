@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { SiteFooter } from "@/components/public/site-footer";
 import { AppProviders } from "@/components/providers/app-providers";
 import { FloatingWhatsApp } from "@/components/floating-whatsapp";
 
 import "../app/globals.css";
+import { LocationSection } from "@/components/location-section";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -43,6 +43,7 @@ export default function RootLayout({
             </main>
           </div>
         </AppProviders>
+
 
         {/* Componentes Globales */}
         <FloatingWhatsApp />

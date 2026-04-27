@@ -53,7 +53,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           </span>
         </div>
       </div>
-      <nav className="flex flex-col gap-0.5 p-3">
+        <nav className="flex flex-col gap-0.5 overflow-y-auto p-3">
         {nav.map((item) => (
           <NavItem key={item.href} href={item.href} label={item.label} onClick={onNavigate} />
         ))}
@@ -91,7 +91,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Header móvil con hamburguesa */}
         <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-background/90 px-4 backdrop-blur md:hidden">
-          <span className="font-heading text-sm font-semibold">Panel admin</span>
+          <span className="flex-1 text-sm font-semibold">Panel admin</span>
+          <AdminSignOut />
           <button
             type="button"
             aria-label={mobileOpen ? "Cerrar menú" : "Abrir menú"}

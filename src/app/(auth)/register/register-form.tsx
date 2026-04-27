@@ -155,6 +155,12 @@ export function RegisterForm({ googleEnabled }: { googleEnabled: boolean }) {
               Inicia sesión
             </Link>
           </p>
+          <Link
+            href="/"
+            className="w-full text-center text-sm text-muted-foreground underline-offset-4 hover:underline hover:text-foreground transition-colors"
+          >
+            ← Volver al inicio
+          </Link>
         </CardFooter>
       </form>
     </Card>

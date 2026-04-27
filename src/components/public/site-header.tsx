@@ -7,7 +7,6 @@ import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const links = [
-  { href: "/", label: "Inicio" },
   { href: "/vehiculos", label: "Catálogo" },
   { href: "/blogs", label: "Blog" },
   { href: "/sobre-nosotros", label: "Nosotros" },

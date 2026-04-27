@@ -192,7 +192,7 @@ function CmsDialog({
               <Textarea
                 id="cms-body" rows={16} value={form.body}
                 onChange={(e) => set("body", e.target.value)}
-                placeholder={`<h2>Título de sección</h2>\n<p>Contenido del artículo...</p>`}
+                placeholder={`<h2>Título de sección</h2>\n<p>Contenido del artículo...</p>\n<img src="ruta/de/la/imagen.jpg" alt="Descripción de la imagen">`}
                 className="font-mono text-sm"
               />
               <p className="text-xs text-muted-foreground">

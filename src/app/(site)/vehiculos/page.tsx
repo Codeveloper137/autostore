@@ -94,18 +94,28 @@ type PageProps = {
 
 export default async function VehiculosPage({ searchParams }: PageProps) {
   const sp = await searchParams;
+
+
+  // Paginación
+  const perPage = sp.perPage === "6" ? 6 : 12;
+  const page = Math.max(1, parseInt(sp.page ?? "1", 10) || 1);
+
   const where = buildWhere(sp);
 
-  let vehicles: VehicleWithCategories[] = [];
+ let vehicles: VehicleWithCategories[] = [];
   let brands: Pick<Category, "id" | "name">[] = [];
   let models: Pick<Category, "id" | "name">[] = [];
+  let total = 0;
+
   try {
-    ;[vehicles, brands, models] = await Promise.all([
+    // Eliminamos el "let total = 0" que estaba aquí adentro para no duplicar
+    [vehicles, brands, models, total] = await Promise.all([
       prisma.vehicle.findMany({
         where,
         orderBy: { updatedAt: "desc" },
         include: { brand: true, model: true },
-        take: 120,
+        take: perPage,
+        skip: (page - 1) * perPage,
       }),
       prisma.category.findMany({
         where: {
@@ -118,16 +128,39 @@ export default async function VehiculosPage({ searchParams }: PageProps) {
       prisma.category.findMany({
         where: {
           kind: CategoryKind.MODEL,
-          vehiclesAsModel: { some: { published: true } },
+          vehiclesAsModel: {
+            some: {
+              published: true,
+              archivedAt: null,
+              ...(sp.brandId ? { brandId: sp.brandId } : {}),
+            },
+          },
         },
         select: { id: true, name: true },
         orderBy: { name: "asc" },
       }),
+      // --- ESTA ES LA LÍNEA QUE FALTABA ---
+      prisma.vehicle.count({ where }), 
     ]);
-  } catch {
+  } catch (error) {
+    console.error("Error cargando catálogo:", error);
     vehicles = [];
     brands = [];
     models = [];
+    total = 0;
+  }
+
+  const totalPages = Math.max(1, Math.ceil(total / perPage));
+
+  // Construir URL con los filtros actuales + cambio de página/perPage
+  function buildUrl(overrides: Record<string, string | undefined>) {
+    const params = new URLSearchParams();
+    const merged = { ...sp, ...overrides };
+    for (const [k, v] of Object.entries(merged)) {
+      if (v != null && v !== "" && v !== undefined) params.set(k, v);
+    }
+    const qs = params.toString();
+    return `/vehiculos${qs ? `?${qs}` : ""}`;
   }
 
   const hasFilters = Object.values(sp).some((v) => v != null && v !== "");
@@ -197,7 +230,9 @@ export default async function VehiculosPage({ searchParams }: PageProps) {
               defaultValue={sp.modelId ?? ""}
               className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
             >
-              <option value="">Todos</option>
+              <option value="">
+                {sp.brandId ? `Todos los modelos` : "Todos"}
+              </option>
               {models.map((m) => (
                 <option key={m.id} value={m.id}>
                   {m.name}
@@ -314,6 +349,22 @@ export default async function VehiculosPage({ searchParams }: PageProps) {
             </select>
           </div>
 
+          <div className="space-y-2">
+            <label htmlFor="flt-per-page" className="text-xs font-medium text-muted-foreground">
+              Por página
+            </label>
+            <select
+              id="flt-per-page"
+              name="perPage"
+              defaultValue={String(perPage)}
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+            >
+              <option value="6">6 vehículos</option>
+              <option value="12">12 vehículos</option>
+            </select>
+          </div>
+
+
           {/* 8. DESTACADO (Ocupa la columna 2 / Mitad) */}
           <div className="space-y-2">
             <label htmlFor="flt-destacado" className="text-xs font-medium text-muted-foreground">
@@ -384,11 +435,37 @@ export default async function VehiculosPage({ searchParams }: PageProps) {
         </div>
       ) : (
         <>
-          <p className="mb-4 text-sm text-muted-foreground">
-            Mostrando <span className="font-medium text-foreground">{vehicles.length}</span>{" "}
-            {vehicles.length === 1 ? "vehículo" : "vehículos"}
-          </p>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {/* Contador y selector de página */}
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <p className="text-sm text-muted-foreground">
+              Mostrando{" "}
+              <span className="font-medium text-foreground">
+                {(page - 1) * perPage + 1}–{Math.min(page * perPage, total)}
+              </span>{" "}
+              de <span className="font-medium text-foreground">{total}</span>{" "}
+              {total === 1 ? "vehículo" : "vehículos"}
+            </p>
+
+            {/* Selector rápido de items por página (sin submit, usando links) */}
+            <div className="flex items-center gap-1 rounded-lg border border-border p-0.5">
+              {([6, 12] as const).map((n) => (
+                <Link
+                  key={n}
+                  href={buildUrl({ perPage: String(n), page: "1" })}
+                  className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
+                    perPage === n
+                      ? "bg-foreground text-background"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {n}
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          {/* Grid de vehículos */}
+          <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
             {vehicles.map((v) => (
               <VehicleCard
                 key={v.id}
@@ -410,6 +487,72 @@ export default async function VehiculosPage({ searchParams }: PageProps) {
               />
             ))}
           </div>
+
+          {/* Navegación de páginas */}
+          {totalPages > 1 ? (
+            <div className="mt-10 flex items-center justify-center gap-2">
+              {/* Anterior */}
+              {page > 1 ? (
+                <Link
+                  href={buildUrl({ page: String(page - 1) })}
+                  className={cn(
+                    buttonVariants({ variant: "outline", size: "sm" }),
+                    "min-w-20 justify-center"
+                  )}
+                >
+                  ← Anterior
+                </Link>
+              ) : (
+                <span className={cn(buttonVariants({ variant: "outline", size: "sm" }), "min-w-20 justify-center opacity-40 pointer-events-none")}>
+                  ← Anterior
+                </span>
+              )}
+
+              {/* Números de página */}
+              <div className="flex items-center gap-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter((n) => n === 1 || n === totalPages || Math.abs(n - page) <= 1)
+                  .reduce<(number | "…")[]>((acc, n, i, arr) => {
+                    if (i > 0 && n - (arr[i - 1] as number) > 1) acc.push("…");
+                    acc.push(n);
+                    return acc;
+                  }, [])
+                  .map((n, i) =>
+                    n === "…" ? (
+                      <span key={`ellipsis-${i}`} className="px-1 text-sm text-muted-foreground">…</span>
+                    ) : (
+                      <Link
+                        key={n}
+                        href={buildUrl({ page: String(n) })}
+                        className={cn(
+                          buttonVariants({ variant: n === page ? "default" : "outline", size: "sm" }),
+                          "min-w-9 justify-center tabular-nums"
+                        )}
+                      >
+                        {n}
+                      </Link>
+                    )
+                  )}
+              </div>
+
+              {/* Siguiente */}
+              {page < totalPages ? (
+                <Link
+                  href={buildUrl({ page: String(page + 1) })}
+                  className={cn(
+                    buttonVariants({ variant: "outline", size: "sm" }),
+                    "min-w-20 justify-center"
+                  )}
+                >
+                  Siguiente →
+                </Link>
+              ) : (
+                <span className={cn(buttonVariants({ variant: "outline", size: "sm" }), "min-w20 justify-center opacity-40 pointer-events-none")}>
+                  Siguiente →
+                </span>
+              )}
+            </div>
+          ) : null}
         </>
       )}
     </div>

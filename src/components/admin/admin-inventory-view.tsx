@@ -1,6 +1,7 @@
 "use client";
 
-import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { useState } from "react";
 
@@ -25,6 +26,8 @@ async function fetchVehicles(): Promise<VehicleRow[]> {
 
 export function AdminInventoryView() {
   const [editingVehicle, setEditingVehicle] = useState<VehicleRow | null>(null);
+  const [perPage, setPerPage] = useState<6 | 12>(12);
+  const [page, setPage] = useState(1);
   const queryClient = useQueryClient();
   const { data, isPending, isError, error, refetch, isFetching } = useQuery({
     queryKey: ["admin", "vehicles"],
@@ -49,6 +52,10 @@ export function AdminInventoryView() {
     onSuccess: invalidateVehicles,
   });
 
+  // Paginación client-side (los datos ya están en memoria via React Query)
+  const totalPages = data ? Math.ceil(data.length / perPage) : 1;
+  const pagedData = data ? data.slice((page - 1) * perPage, page * perPage) : [];
+
   return (
     <div className="space-y-10">
       <VehicleFormDialog
@@ -67,11 +74,27 @@ export function AdminInventoryView() {
         <div className="space-y-1">
           <h1 className="font-heading text-2xl font-semibold tracking-tight">Inventario</h1>
           <p className="max-w-2xl text-sm text-muted-foreground">
-            Tabla de productos para el panel interno. Los datos se cargan con React Query desde la API
-            administrativa.
+            Tabla de productos del panel interno. Datos cargados desde la API administrativa.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {/* Selector de items por página */}
+          <div className="flex items-center gap-1 rounded-lg border border-border p-0.5">
+            {([6, 12] as const).map((n) => (
+              <button
+                key={n}
+                type="button"
+                onClick={() => { setPerPage(n); setPage(1); }}
+                className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
+                  perPage === n
+                    ? "bg-foreground text-background"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
           <CreateVehicleDialog onCreated={invalidateVehicles} />
           <Button
             type="button"
@@ -129,11 +152,48 @@ export function AdminInventoryView() {
         ) : null}
 
         {data && data.length > 0 ? (
-          <VehiclesTable
-            vehicles={data}
-            onEdit={(v) => setEditingVehicle(v)}
-            onArchive={(v) => archiveMutation.mutate(v)}
-          />
+          <>
+            <VehiclesTable
+              vehicles={pagedData}
+              onEdit={(v) => setEditingVehicle(v)}
+              onArchive={(v) => archiveMutation.mutate(v)}
+            />
+            {/* Controles de paginación */}
+            {totalPages > 1 ? (
+              <div className="flex items-center justify-between pt-2">
+                <p className="text-sm text-muted-foreground">
+                  Mostrando{" "}
+                  <span className="font-medium text-foreground">
+                    {(page - 1) * perPage + 1}–{Math.min(page * perPage, data.length)}
+                  </span>{" "}
+                  de <span className="font-medium text-foreground">{data.length}</span>
+                </p>
+                <div className="flex items-center gap-1">
+                  <Button
+                    size="icon-sm"
+                    variant="outline"
+                    disabled={page === 1}
+                    onClick={() => setPage((p) => p - 1)}
+                    aria-label="Página anterior"
+                  >
+                    <ChevronLeft className="size-4" />
+                  </Button>
+                  <span className="px-2 text-sm tabular-nums text-muted-foreground">
+                    {page} / {totalPages}
+                  </span>
+                  <Button
+                    size="icon-sm"
+                    variant="outline"
+                    disabled={page === totalPages}
+                    onClick={() => setPage((p) => p + 1)}
+                    aria-label="Página siguiente"
+                  >
+                    <ChevronRight className="size-4" />
+                  </Button>
+                </div>
+              </div>
+            ) : null}
+          </>
         ) : null}
       </section>
 
@@ -159,8 +219,8 @@ export function AdminInventoryView() {
             La vista previa de tarjetas aparecerá cuando el listado superior cargue sin errores.
           </p>
         ) : data && data.length > 0 ? (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {data.slice(0, 3).map((v) => (
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {pagedData.slice(0, perPage).map((v) => (
               <VehicleCard
                 key={v.id}
                 id={v.id}
