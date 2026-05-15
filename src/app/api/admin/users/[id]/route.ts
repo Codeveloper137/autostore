@@ -1,4 +1,3 @@
-import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/infrastructure/persistence/prisma";

@@ -11,7 +11,6 @@ import Link from "next/link";
 import { VehicleCard } from "@/components/admin/vehicle-card";
 import { buttonVariants } from "@/components/ui/button";
 import { prisma } from "@/infrastructure/persistence/prisma";
-import { fuelLabel, transmissionLabel } from "@/lib/vehicle-labels";
 import { cn } from "@/lib/utils";
 
 import { TrackView } from "@/app/api/analytics/track-view";

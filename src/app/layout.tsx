@@ -4,7 +4,6 @@ import { AppProviders } from "@/components/providers/app-providers";
 import { FloatingWhatsApp } from "@/components/floating-whatsapp";
 
 import "../app/globals.css";
-import { LocationSection } from "@/components/location-section";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

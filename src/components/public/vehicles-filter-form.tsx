@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { fuelLabel, transmissionLabel } from "@/lib/vehicle-labels";
-import type { FuelType, Transmission, VehicleCondition } from "@prisma/client";
 import { FuelType as FuelEnum, Transmission as TransEnum } from "@prisma/client";
 
 const FUELS = Object.values(FuelEnum);

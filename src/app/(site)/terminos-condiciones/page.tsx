@@ -84,8 +84,7 @@ export default function TerminosPage() {
           <h2 className="font-heading text-lg font-semibold mb-3">7. Limitación de responsabilidad</h2>
           <p className="text-sm leading-relaxed text-muted-foreground">
             Auto Store Motors no será responsable por daños directos, indirectos o consecuentes
-            derivados del uso o imposibilidad de uso de este sitio web. El sitio se ofrece
-            "tal cual" sin garantías de disponibilidad ininterrumpida.
+            derivados del uso o imposibilidad de uso de este sitio web. El sitio se ofrece &quot;tal cual&quot; sin garantías de disponibilidad ininterrumpida.
           </p>
         </section>
 
