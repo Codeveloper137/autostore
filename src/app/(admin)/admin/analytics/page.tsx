@@ -4,7 +4,7 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianG
 import { Skeleton } from "@/components/ui/skeleton";
 
 type Analytics = {
-  totals: { siteViews: number; vehicleViews: number; vehicles: number; users: number; pendingMessages: number };
+  totals: { siteViews: number; vehicleViews: number; pageViews: number; vehicles: number; users: number; pendingMessages: number };
   topVehicles: { vehicleId: string | null; title: string; views: number }[];
   dailyVisits: { date: string; count: number }[];
 };
@@ -36,14 +36,14 @@ export default function AdminAnalyticsPage() {
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-3">
-          {[
-            { label: "Visitas al home", value: data?.totals.siteViews ?? 0 },
-            { label: "Vistas de vehículos", value: data?.totals.vehicleViews ?? 0 },
-            { label: "Visitas al catálogo", value: (data?.totals.siteViews ?? 0) > 0 ? "ver gráfico" : 0 },
-          ].map((m) => (
+        {[
+          { label: "Visitas al home", value: data?.totals.siteViews ?? 0 },
+          { label: "Vistas de vehículos", value: data?.totals.vehicleViews ?? 0 },
+          { label: "Visitas al catálogo", value: data?.totals.pageViews ?? 0 },
+        ].map((m) => (
             <div key={m.label} className="rounded-xl border border-border bg-card p-4 shadow-sm">
               <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{m.label}</p>
-              <p className="mt-1 text-2xl font-semibold tabular-nums">{typeof m.value === "number" ? m.value.toLocaleString("es-CO") : m.value}</p>
+            <p className="mt-1 text-2xl font-semibold tabular-nums">{m.value.toLocaleString("es-CO")}</p>
             </div>
           ))}
         </div>
@@ -57,8 +57,8 @@ export default function AdminAnalyticsPage() {
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
               <XAxis dataKey="date" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
               <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} allowDecimals={false} />
-              <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }} />
-              <Line type="monotone" dataKey="visitas" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
+              <Tooltip contentStyle={{ background: "#fff", border: "1px solid #e4e4e7", borderRadius: "8px", fontSize: "12px" }} />
+              <Line type="monotone" dataKey="visitas" stroke="#18181b" strokeWidth={2} dot={{ fill: "#18181b", r: 3 }} activeDot={{ r: 5 }} />
             </LineChart>
           </ResponsiveContainer>
         )}

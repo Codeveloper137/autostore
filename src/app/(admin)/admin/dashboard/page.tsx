@@ -67,8 +67,8 @@ export default function AdminDashboardPage() {
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
               <XAxis dataKey="date" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
               <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} allowDecimals={false} />
-              <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }} />
-              <Bar dataKey="visitas" radius={[4, 4, 0, 0]} fill="hsl(var(--primary))" />
+              <Tooltip contentStyle={{ background: "#fff", border: "1px solid #e4e4e7", borderRadius: "8px", fontSize: "12px" }} />
+              <Bar dataKey="visitas" radius={[4, 4, 0, 0]} fill="#18181b" />
             </BarChart>
           </ResponsiveContainer>
         )}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, Mail } from "lucide-react";
+import { AlertCircle, ChevronLeft, ChevronRight, Mail } from "lucide-react";
 import { useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -227,6 +227,8 @@ function MessageDetailDialog({
 
 export default function AdminMessagesPage() {
   const [filter, setFilter] = useState("all");
+  const [page, setPage] = useState(1);
+  const perPage = 12;
   const [selected, setSelected] = useState<QuoteRow | null>(null);
   const queryClient = useQueryClient();
 
@@ -250,7 +252,9 @@ export default function AdminMessagesPage() {
   });
 
   const filtered = filter === "all" ? (data ?? []) : (data ?? []).filter((m) => m.status === filter);
-
+  const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
+  const pagedMessages = filtered.slice((page - 1) * perPage, page * perPage);
+ 
   return (
     <div className="space-y-6">
       <div>
@@ -261,7 +265,8 @@ export default function AdminMessagesPage() {
       {/* Filtros */}
       <div className="flex flex-wrap gap-2">
         {["all", "PENDING", "IN_PROGRESS", "RESOLVED", "ARCHIVED"].map((s) => (
-          <Button key={s} size="sm" variant={filter === s ? "default" : "outline"} onClick={() => setFilter(s)}>
+          <Button key={s} size="sm" variant={filter === s ? "default" : "outline"} 
+          onClick={() => { setFilter(s); setPage(1); }}>
             {s === "all" ? "Todos" : LABELS[s as QuoteRow["status"]]}
             {s !== "all" && data ? (
               <span className="ml-1.5 tabular-nums opacity-70">
@@ -309,7 +314,7 @@ export default function AdminMessagesPage() {
                     No hay mensajes con este filtro.
                   </TableCell>
                 </TableRow>
-              ) : filtered.map((m) => (
+              ) : pagedMessages.map((m) => (
                 <TableRow
                   key={m.id}
                   className="cursor-pointer"
@@ -350,6 +355,43 @@ export default function AdminMessagesPage() {
           </Table>
         </div>
       )}
+
+      {/* Paginación */}
+      {filtered.length > perPage ? (
+        <div className="flex items-center justify-between pt-2">
+          <p className="text-sm text-muted-foreground">
+            Mostrando{" "}
+            <span className="font-medium text-foreground">
+              {(page - 1) * perPage + 1}–{Math.min(page * perPage, filtered.length)}
+            </span>{" "}
+            de <span className="font-medium text-foreground">{filtered.length}</span>
+          </p>
+          <div className="flex items-center gap-1">
+            <Button
+              size="icon-sm"
+              variant="outline"
+              disabled={page === 1}
+              onClick={() => setPage((p) => p - 1)}
+              aria-label="Página anterior"
+            >
+              <ChevronLeft className="size-4" />
+            </Button>
+            <span className="px-2 text-sm tabular-nums text-muted-foreground">
+              {page} / {totalPages}
+            </span>
+            <Button
+              size="icon-sm"
+              variant="outline"
+              disabled={page === totalPages}
+              onClick={() => setPage((p) => p + 1)}
+              aria-label="Página siguiente"
+            >
+              <ChevronRight className="size-4" />
+            </Button>
+          </div>
+        </div>
+      ) : null}
+    
     </div>
   );
 }

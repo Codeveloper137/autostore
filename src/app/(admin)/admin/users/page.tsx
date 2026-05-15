@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, Plus, RotateCcw, ShieldOff, UserX } from "lucide-react";
+import { AlertCircle, ChevronLeft, ChevronRight, Plus, RotateCcw, ShieldOff, UserX } from "lucide-react";
 import { useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -111,6 +111,10 @@ function CreateUserDialog({ onCreated }: { onCreated: () => void }) {
 
 export default function AdminUsersPage() {
   const queryClient = useQueryClient();
+
+  const [perPage, setPerPage] = useState<12 | 24>(12);
+  const [page, setPage] = useState(1);
+
   const { data, isPending, isError, error } = useQuery({ queryKey: ["admin", "users"], queryFn: fetchUsers });
   const invalidate = () => void queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
 
@@ -126,6 +130,10 @@ export default function AdminUsersPage() {
     onSuccess: invalidate,
   });
 
+  const totalPages = data ? Math.ceil(data.length / perPage) : 1;
+  const pagedUsers = data ? data.slice((page - 1) * perPage, page * perPage) : [];
+
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -133,7 +141,25 @@ export default function AdminUsersPage() {
           <h1 className="font-heading text-2xl font-semibold tracking-tight">Usuarios</h1>
           <p className="text-sm text-muted-foreground">Clientes y administradores registrados.</p>
         </div>
-        <CreateUserDialog onCreated={invalidate} />
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 rounded-lg border border-border p-0.5">
+            {([] as const).map((n) => (
+              <button
+                key={n}
+                type="button"
+                onClick={() => { setPerPage(n); setPage(1); }}
+                className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
+                  perPage === n
+                    ? "bg-foreground text-background"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
+          <CreateUserDialog onCreated={invalidate} />
+        </div>
       </div>
 
       {isPending ? (
@@ -164,7 +190,8 @@ export default function AdminUsersPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {data?.map((u) => {
+              {pagedUsers.map((u) => {
+
                   const isBanned = Boolean(u.bannedAt);
                   const isArchived = Boolean(u.archivedAt);
                   const isCreds = u.accounts.length === 0;
@@ -219,6 +246,43 @@ export default function AdminUsersPage() {
           </div>
         </>
       )}
+
+          {/* Paginación */}
+          {data && totalPages > 1 ? (
+            <div className="flex items-center justify-between pt-2">
+              <p className="text-sm text-muted-foreground">
+                Mostrando{" "}
+                <span className="font-medium text-foreground">
+                  {(page - 1) * perPage + 1}–{Math.min(page * perPage, data.length)}
+                </span>{" "}
+                de <span className="font-medium text-foreground">{data.length}</span>
+              </p>
+              <div className="flex items-center gap-1">
+                <Button
+                  size="icon-sm"
+                  variant="outline"
+                  disabled={page === 1}
+                  onClick={() => setPage((p) => p - 1)}
+                  aria-label="Página anterior"
+                >
+                  <ChevronLeft className="size-4" />
+                </Button>
+                <span className="px-2 text-sm tabular-nums text-muted-foreground">
+                  {page} / {totalPages}
+                </span>
+                <Button
+                  size="icon-sm"
+                  variant="outline"
+                  disabled={page === totalPages}
+                  onClick={() => setPage((p) => p + 1)}
+                  aria-label="Página siguiente"
+                >
+                  <ChevronRight className="size-4" />
+                </Button>
+              </div>
+            </div>
+          ) : null}
+
     </div>
   );
 }

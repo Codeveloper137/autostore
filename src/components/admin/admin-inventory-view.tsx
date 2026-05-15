@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowUpDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { useState } from "react";
 
@@ -28,6 +28,8 @@ export function AdminInventoryView() {
   const [editingVehicle, setEditingVehicle] = useState<VehicleRow | null>(null);
   const [perPage, setPerPage] = useState<6 | 12>(12);
   const [page, setPage] = useState(1);
+  type SortKey = "default" | "year_asc" | "year_desc" | "price_asc" | "price_desc" | "status";
+  const [sortKey, setSortKey] = useState<SortKey>("default");
   const queryClient = useQueryClient();
   const { data, isPending, isError, error, refetch, isFetching } = useQuery({
     queryKey: ["admin", "vehicles"],
@@ -53,8 +55,25 @@ export function AdminInventoryView() {
   });
 
   // Paginación client-side (los datos ya están en memoria via React Query)
-  const totalPages = data ? Math.ceil(data.length / perPage) : 1;
-  const pagedData = data ? data.slice((page - 1) * perPage, page * perPage) : [];
+  const sortedData = data
+    ? [...data].sort((a, b) => {
+        switch (sortKey) {
+          case "year_asc":   return a.year - b.year;
+          case "year_desc":  return b.year - a.year;
+          case "price_asc":  return a.priceAmount - b.priceAmount;
+          case "price_desc": return b.priceAmount - a.priceAmount;
+          case "status":
+            // Orden: Publicado+Destacado → Publicado → Borrador → Archivado
+            const rank = (v: typeof a) =>
+              v.archivedAt ? 3 : v.published && v.featured ? 0 : v.published ? 1 : 2;
+            return rank(a) - rank(b);
+          default: return 0; // mantiene el orden del servidor (updatedAt desc)
+        }
+      })
+    : [];
+
+  const totalPages = Math.max(1, Math.ceil(sortedData.length / perPage));
+  const pagedData = sortedData.slice((page - 1) * perPage, page * perPage);
 
   return (
     <div className="space-y-10">
@@ -95,6 +114,21 @@ export function AdminInventoryView() {
               </button>
             ))}
           </div>
+
+          {/* Ordenamiento */}
+          <select
+            value={sortKey}
+            onChange={(e) => { setSortKey(e.target.value as SortKey); setPage(1); }}
+            className="h-8 rounded-lg border border-border bg-transparent px-2 text-sm text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          >
+            <option value="default">Orden por defecto</option>
+            <option value="year_desc">Año: más reciente</option>
+            <option value="year_asc">Año: más antiguo</option>
+            <option value="price_desc">Precio: mayor a menor</option>
+            <option value="price_asc">Precio: menor a mayor</option>
+            <option value="status">Por estado</option>
+          </select>
+
           <CreateVehicleDialog onCreated={invalidateVehicles} />
           <Button
             type="button"
@@ -119,9 +153,9 @@ export function AdminInventoryView() {
       <section className="space-y-3">
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-sm font-medium text-muted-foreground">Listado</h2>
-          {data ? (
+          {sortedData.length > 0 ? (
             <span className="text-xs text-muted-foreground tabular-nums">
-              {data.length} vehículo{data.length === 1 ? "" : "s"}
+              {sortedData.length} vehículo{sortedData.length === 1 ? "" : "s"}
             </span>
           ) : null}
         </div>

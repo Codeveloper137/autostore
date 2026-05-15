@@ -8,6 +8,9 @@ import { sharedAuthConfig } from "@/auth.config.shared";
 import { getAuthSecret } from "@/lib/auth-secret";
 import { prisma } from "@/infrastructure/persistence/prisma";
 
+import { rateLimit } from "@/lib/rate-limit";
+
+
 const googleConfigured =
   Boolean(process.env.AUTH_GOOGLE_ID?.length) && Boolean(process.env.AUTH_GOOGLE_SECRET?.length);
 
@@ -34,6 +37,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const email = credentials?.email;
         const password = credentials?.password;
         if (typeof email !== "string" || typeof password !== "string") return null;
+
+        // Rate limiting por email: 10 intentos cada 15 minutos
+        const { allowed } = rateLimit(`login:${email}`, 10, 15 * 60 * 1000);
+        if (!allowed) return null;
+
 
         const user = await prisma.user.findUnique({ where: { email } });
         if (!user?.passwordHash) return null;

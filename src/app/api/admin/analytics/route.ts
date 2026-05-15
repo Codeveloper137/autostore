@@ -17,12 +17,15 @@ export async function GET() {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    const [siteViews, vehicleViews, vehicles, users, pendingMessages] = await Promise.all([
+    const [siteViews, vehicleViews, pageViews, vehicles, users, pendingMessages] = await Promise.all([
       prisma.analyticsEvent.count({
         where: { type: AnalyticsEventType.SITE_VIEW, createdAt: { gte: thirtyDaysAgo } },
       }),
       prisma.analyticsEvent.count({
         where: { type: AnalyticsEventType.VEHICLE_VIEW, createdAt: { gte: thirtyDaysAgo } },
+      }),
+      prisma.analyticsEvent.count({
+        where: { type: AnalyticsEventType.PAGE_VIEW, createdAt: { gte: thirtyDaysAgo } },
       }),
       prisma.vehicle.count({ where: { archivedAt: null } }),
       prisma.user.count({ where: { archivedAt: null } }),
@@ -39,19 +42,27 @@ export async function GET() {
     });
 
     const vehicleIds = topRaw.map((r) => r.vehicleId).filter(Boolean) as string[];
+
+    // Solo vehículos activos (no archivados)
     const vehicleDetails = await prisma.vehicle.findMany({
-      where: { id: { in: vehicleIds } },
+      where: { id: { in: vehicleIds }, archivedAt: null },
       select: { id: true, title: true, brand: { select: { name: true } } },
     });
 
-    const topVehicles = topRaw.map((r) => {
-      const v = vehicleDetails.find((vv) => vv.id === r.vehicleId);
-      return {
-        vehicleId: r.vehicleId,
-        title: v ? `${v.brand.name} — ${v.title}` : "Vehículo eliminado",
-        views: r._count.vehicleId,
-      };
-    });
+    // Solo incluir vehículos que existen y no están archivados
+    const activeIds = new Set(vehicleDetails.map((v) => v.id));
+    const topVehicles = topRaw
+      .filter((r) => r.vehicleId !== null && activeIds.has(r.vehicleId))
+      .map((r) => {
+        const v = vehicleDetails.find((vv) => vv.id === r.vehicleId)!;
+        return {
+          vehicleId: r.vehicleId,
+          title: `${v.brand.name} — ${v.title}`,
+          views: r._count.vehicleId,
+        };
+      })
+      .filter((r) => r.title !== null) as { vehicleId: string | null; title: string; views: number }[];
+
 
     // Visitas diarias últimos 14 días
     const fourteenDaysAgo = new Date();
@@ -79,7 +90,7 @@ export async function GET() {
     const dailyVisits = Array.from(dailyMap.entries()).map(([date, count]) => ({ date, count }));
 
     return NextResponse.json({
-      totals: { siteViews, vehicleViews, vehicles, users, pendingMessages },
+      totals: { siteViews, vehicleViews, pageViews, vehicles, users, pendingMessages },
       topVehicles,
       dailyVisits,
     });
